@@ -1,31 +1,45 @@
 <script lang="ts">
-	import { onInterval, msToMinSec, SpotifyLogo } from './utils';
 	import { fade } from 'svelte/transition';
-	// import icon from './spotify-icon-w.png';
-	import { cubicOut, cubicIn } from 'svelte/easing';
-	import { writable } from 'svelte/store';
-	export let player: WebPlaybackPlayer, state: WebPlaybackState;
+	import { SpotifyLogo, msToMinSec, onInterval } from './utils';
+// import icon from './spotify-icon-w.png';
+	import { DEFAULT_BUMPS_CONFIG, type BumpsConfig } from '$lib/bumps-config';
 	import {
 		BehaviorSubject,
 		Subject,
 		distinctUntilChanged,
-		iif,
 		of,
 		switchMap,
 		tap,
-		timer
+		timer,
+
+		withLatestFrom
+
 	} from 'rxjs';
+	import { setContext } from 'svelte';
+	import { cubicIn, cubicOut } from 'svelte/easing';
+	export let player: WebPlaybackPlayer, state: WebPlaybackState;
+	import { writable } from 'svelte/store';
 	const paused$ = new BehaviorSubject(true);
 	const bumpPauses$ = new Subject<void>();
+	let _bumpsConfig: BumpsConfig = {...DEFAULT_BUMPS_CONFIG};
+	const bumpsConfig = writable();
+	$: bumpsConfig.set(_bumpsConfig);
 
-	bumpPauses$
+	// ...and add it to the context for child components to access
+	setContext('bumpsConfig', bumpsConfig);
+
+	const generateDelay = ({averageTimeInSeconds, marginInSeconds}: BumpsConfig) => (averageTimeInSeconds * 1000) + (((Math.random() - 0.5) * 2) * (marginInSeconds * 1000) * 2)
+
+		bumpPauses$
 		.pipe(
 			tap(() => {
 				player.pause();
 			}),
-			switchMap(() => timer(3 * 1000).pipe(switchMap(() => player.togglePlay())))
+			switchMap(() => timer(_bumpsConfig.timeToAutoRestartInSeconds * 1000).pipe(switchMap(() => player.togglePlay())))
 		)
 		.subscribe();
+
+	
 
 	paused$
 		.pipe(
@@ -33,7 +47,9 @@
 			tap((value) => console.log(`paused: ${value}`)),
 			switchMap((value) => {
 				if (!value) {
-					return timer(1000 * 10).pipe(
+					const delay = generateDelay(_bumpsConfig);
+					console.log(`delay is going to be ${(delay / 1000).toFixed(2)}`)
+					return timer(delay).pipe(
 						tap(() => {
 							bumpPauses$.next();
 						})
