@@ -15,31 +15,39 @@
 		withLatestFrom
 
 	} from 'rxjs';
+	import Queue from './Queue.svelte'
 	import { setContext } from 'svelte';
 	import { cubicIn, cubicOut } from 'svelte/easing';
-	export let player: WebPlaybackPlayer, state: WebPlaybackState;
-	import { writable } from 'svelte/store';
+	export let player: WebPlaybackPlayer, state: WebPlaybackState, queue: any;
+	import BumpsConfigForm from '$lib/config/BumpsConfigForm.svelte';
 	const paused$ = new BehaviorSubject(true);
 	const bumpPauses$ = new Subject<void>();
-	let _bumpsConfig: BumpsConfig = {...DEFAULT_BUMPS_CONFIG};
-	const bumpsConfig = writable();
-	$: bumpsConfig.set(_bumpsConfig);
+	let bumpsConfig: BumpsConfig = {...DEFAULT_BUMPS_CONFIG};
+
+	let hasBumped = false;
+	const recordScratchSound = new Audio('/record_scratch-108233.mp3');
+	
 
 	// ...and add it to the context for child components to access
 	setContext('bumpsConfig', bumpsConfig);
 
 	const generateDelay = ({averageTimeInSeconds, marginInSeconds}: BumpsConfig) => (averageTimeInSeconds * 1000) + (((Math.random() - 0.5) * 2) * (marginInSeconds * 1000) * 2)
 
-		bumpPauses$
+	bumpPauses$
 		.pipe(
 			tap(() => {
+				
 				player.pause();
+				hasBumped = true;
+				playBumpSound()
 			}),
-			switchMap(() => timer(_bumpsConfig.timeToAutoRestartInSeconds * 1000).pipe(switchMap(() => player.togglePlay())))
+			switchMap(() => timer(bumpsConfig.timeToAutoRestartInSeconds * 1000).pipe(switchMap(() => player.togglePlay())))
 		)
 		.subscribe();
 
-	
+	async function  playBumpSound() {
+		const audio = await recordScratchSound.play()
+	}
 
 	paused$
 		.pipe(
@@ -47,7 +55,7 @@
 			tap((value) => console.log(`paused: ${value}`)),
 			switchMap((value) => {
 				if (!value) {
-					const delay = generateDelay(_bumpsConfig);
+					const delay = generateDelay(bumpsConfig);
 					console.log(`delay is going to be ${(delay / 1000).toFixed(2)}`)
 					return timer(delay).pipe(
 						tap(() => {
@@ -67,6 +75,9 @@
 
 	player.addListener('player_state_changed', (event) => {
 		paused$.next(!!event?.paused);
+		if (!event?.paused){
+			hasBumped = false;
+		}
 	});
 
 	/**
@@ -76,7 +87,11 @@
 	onInterval(() => (position += state.paused ? 0 : 300), 300);
 </script>
 
-<h3>Matt Player</h3>
+{#if hasBumped}
+<section>
+	<h1>BUMP</h1>
+</section>
+{/if}
 <div
 	class="basic-player"
 	on:mouseenter={() => (hovered = true)}
@@ -121,6 +136,12 @@
 		</div>
 	</div>
 </div>
+<Queue {queue} ></Queue>
+
+<section>
+	<h3>Bumps Setup</h3>
+	<BumpsConfigForm {bumpsConfig} ></BumpsConfigForm>
+</section>
 
 <style>
 	.basic-player {

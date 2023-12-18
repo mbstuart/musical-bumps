@@ -1,29 +1,27 @@
 <script lang="ts">
-    import { writable } from 'svelte/store';
+	import { DEFAULT_BUMPS_CONFIG, type BumpsConfig } from '$lib/bumps-config';
 
-    let 
-
-    let timeBetweenBumpsInSeconds = 20;
-    let bumpMarginInSeconds = 3;
+	export let bumpsConfig: BumpsConfig = DEFAULT_BUMPS_CONFIG
+    
 
 </script>
 
 <section>
 	<h2>Average # seconds between bumps</h2>
 	<div>
-		<input type="number" bind:value={timeBetweenBumpsInSeconds} min="10" max="60" />
+		<input type="number" bind:value={bumpsConfig.averageTimeInSeconds} min="10" max="60" />
 	</div>
 	<div>
-		<input type="range" bind:value={timeBetweenBumpsInSeconds} min="10" max="60" />
+		<input type="range" bind:value={bumpsConfig.averageTimeInSeconds} min="10" max="60" />
 	</div>
 </section>
 
 <section>
 	<h2>Margin of uncertainty between bumps (higher = more random)</h2>
 	<div>
-		<input type="number" bind:value={bumpMarginInSeconds} min="0" max="{timeBetweenBumpsInSeconds / 2}" />
+		<input type="number" bind:value={bumpsConfig.marginInSeconds} min="0" max="{bumpsConfig.averageTimeInSeconds / 2}" />
 	</div>
 	<div>
-		<input type="range" bind:value={bumpMarginInSeconds} min="0" max="{timeBetweenBumpsInSeconds / 2}" />
+		<input type="range" bind:value={bumpsConfig.marginInSeconds} min="0" max="{bumpsConfig.averageTimeInSeconds / 2}" />
 	</div>
 </section>

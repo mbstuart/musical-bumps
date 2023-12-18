@@ -92,6 +92,16 @@ export async function setDevice(token: string, deviceId: string, shouldPlay?: bo
   });
 }
 
+export async function getQueue(token: string) {
+  return fetch(`https://api.spotify.com/v1/me/player/queue`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    method: 'GET'
+  })
+}
+
 /**
  * Automatically destroyed interval.
  */
