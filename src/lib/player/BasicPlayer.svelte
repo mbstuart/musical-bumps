@@ -20,9 +20,17 @@
 	import { cubicIn, cubicOut } from 'svelte/easing';
 	export let player: WebPlaybackPlayer, state: WebPlaybackState, queue: any;
 	import BumpsConfigForm from '$lib/config/BumpsConfigForm.svelte';
+	import { persisted } from 'svelte-persisted-store';
 	const paused$ = new BehaviorSubject(true);
 	const bumpPauses$ = new Subject<void>();
-	let bumpsConfig: BumpsConfig = {...DEFAULT_BUMPS_CONFIG};
+
+		let bumpsConfig: BumpsConfig;
+		const persistedBumps = persisted('bumpsConfig', DEFAULT_BUMPS_CONFIG)
+		
+		persistedBumps.subscribe(_bumpsConfig => {
+			
+			bumpsConfig = _bumpsConfig
+		})
 
 	let hasBumped = false;
 	const recordScratchSound = new Audio('/record_scratch-108233.mp3');
@@ -140,7 +148,7 @@
 
 <section>
 	<h3>Bumps Setup</h3>
-	<BumpsConfigForm {bumpsConfig} ></BumpsConfigForm>
+	<BumpsConfigForm ></BumpsConfigForm>
 </section>
 
 <style>
